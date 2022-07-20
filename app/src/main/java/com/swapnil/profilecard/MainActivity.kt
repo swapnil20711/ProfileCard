@@ -6,18 +6,22 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.AbsoluteCutCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Card
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.swapnil.profilecard.ui.theme.LightGreen
 import com.swapnil.profilecard.ui.theme.ProfileCardTheme
 
 class MainActivity : ComponentActivity() {
@@ -45,42 +49,87 @@ fun DefaultPreview() {
 }
 
 @Composable
-fun ProfileCard() {
+fun ProfileCard(userProfile: UserProfile) {
     Card(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
             .wrapContentHeight(Alignment.Top),
-        shape = AbsoluteCutCornerShape(topRight = 16.dp),
         backgroundColor = Color.White,
         elevation = 8.dp
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
-            ProfilePicture()
-            ProfileContent()
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            ProfilePicture(userProfile.drawableId, userProfile.isActive)
+            ProfileContent(userProfile.userName, userProfile.isActive)
         }
     }
 }
 
 @Composable
-fun ProfileContent() {
-    Text(text = "Swapnil Bhojwani", modifier = Modifier.padding(8.dp))
+fun ProfileContent(userName: String, active: Boolean) {
+    Column(
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Text(text = userName, style = MaterialTheme.typography.h5, color = Color.Black)
+        CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
+            Text(
+                text = if (active)
+                    "Active now!"
+                else
+                    "Offline",
+                style = MaterialTheme.typography.body2,
+                color = Color.Black
+            )
+        }
+    }
 }
 
 @Composable
-fun ProfilePicture() {
-    Card(shape = CircleShape, border = BorderStroke(1.dp,Color.Black)) {
+fun ProfilePicture(drawableId: Int, isActive: Boolean) {
+    Card(
+        shape = CircleShape, border = BorderStroke(
+            2.dp,
+            if (isActive)
+                LightGreen
+            else
+                Color.Red
+        )
+    ) {
         Image(
-            painter = painterResource(id = R.drawable.swapnil_profile),
+            painter = painterResource(id = drawableId),
             contentDescription = "content",
-            Modifier.size(72.dp)
+            Modifier.size(72.dp),
+            contentScale = ContentScale.FillHeight
         )
     }
 }
 
 @Composable
-fun MainScreen() {
-    Surface(modifier = Modifier.fillMaxSize(), color = Color.LightGray) {
-        ProfileCard()
+fun MainScreen(userProfiles: List<UserProfile> = userProfileList) {
+    Scaffold(topBar = { AppBar() }) {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            LazyColumn() {
+                items(userProfiles) { userProfile ->
+                    ProfileCard(userProfile = userProfile)
+                }
+            }
+        }
     }
+}
+
+@Composable
+fun AppBar() {
+    TopAppBar(backgroundColor = Color.Blue, navigationIcon = {
+        IconButton(onClick = {
+        }) {
+            Icon(Icons.Default.Home, "Home")
+        }
+    }, title = { Text(text = "Messaging application") })
 }
