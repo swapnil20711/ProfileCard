@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,7 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
@@ -30,32 +36,36 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ProfileCardTheme {
-                MainScreen()
+                UsersApplication()
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
 }
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     ProfileCardTheme {
-        MainScreen()
+        UsersApplication()
     }
 }
 
+@Preview
 @Composable
-fun ProfileCard(userProfile: UserProfile) {
+fun UserProfilePreview() {
+    UserProfileScreen()
+}
+
+@Composable
+fun ProfileCard(userProfile: UserProfile, clickAction: () -> Unit) {
     Card(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
-            .wrapContentHeight(Alignment.Top),
+            .wrapContentHeight(Alignment.Top)
+            .clickable {
+                clickAction.invoke()
+            },
         backgroundColor = Color.White,
         elevation = 8.dp
     ) {
@@ -64,19 +74,21 @@ fun ProfileCard(userProfile: UserProfile) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-            ProfilePicture(userProfile.isActive, userProfile.imageUrl)
-            ProfileContent(userProfile.userName, userProfile.isActive)
+            ProfilePicture(userProfile.isActive, userProfile.imageUrl, 108.dp)
+            ProfileContent(userProfile.userName, userProfile.isActive, Alignment.Start)
         }
     }
 }
 
 @Composable
-fun ProfileContent(userName: String, active: Boolean) {
+fun ProfileContent(userName: String, active: Boolean, alignment: Alignment.Horizontal) {
+
     Column(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth(),
-        verticalArrangement = Arrangement.SpaceEvenly
+        verticalArrangement = Arrangement.SpaceEvenly,
+        horizontalAlignment = alignment
     ) {
         Text(text = userName, style = MaterialTheme.typography.h5, color = Color.Black)
         CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
@@ -93,8 +105,11 @@ fun ProfileContent(userName: String, active: Boolean) {
 }
 
 @Composable
-fun ProfilePicture(isActive: Boolean, imageUrl: String) {
+fun ProfilePicture(isActive: Boolean, imageUrl: String, dp: Dp) {
     Card(
+        Modifier
+            .size(dp)
+            .padding(16.dp),
         shape = CircleShape, border = BorderStroke(
             2.dp,
             if (isActive)
@@ -103,23 +118,30 @@ fun ProfilePicture(isActive: Boolean, imageUrl: String) {
                 Color.Red
         )
     ) {
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .transformations(CircleCropTransformation()).build(),
-            loading = { CircularProgressIndicator() },
-            contentDescription = null, modifier = Modifier.size(72.dp)
-        )
+        CustomImage(imageUrl = imageUrl)
     }
 }
 
 @Composable
-fun MainScreen(userProfiles: List<UserProfile> = userProfileList) {
+fun CustomImage(imageUrl: String) {
+    SubcomposeAsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(imageUrl)
+            .transformations(CircleCropTransformation()).build(),
+        loading = { CircularProgressIndicator() },
+        contentDescription = null
+    )
+}
+
+@Composable
+fun UsersListScreen(userProfiles: List<UserProfile>, navController: NavHostController) {
     Scaffold(topBar = { AppBar() }) {
         Surface(modifier = Modifier.fillMaxSize()) {
             LazyColumn() {
                 items(userProfiles) { userProfile ->
-                    ProfileCard(userProfile = userProfile)
+                    ProfileCard(userProfile = userProfile) {
+                        navController.navigate("user_detail")
+                    }
                 }
             }
         }
@@ -134,4 +156,42 @@ fun AppBar() {
             Icon(Icons.Default.Home, "Home")
         }
     }, title = { Text(text = "Messaging application") })
+}
+
+
+/*
+* User profile code here*/
+@Composable
+fun UserProfileScreen(userProfile: UserProfile = userProfileList[0]) {
+    Scaffold(topBar = { AppBar() }) {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                ProfilePicture(
+                    isActive = userProfile.isActive,
+                    imageUrl = userProfile.imageUrl,
+                    156.dp
+                )
+                ProfileContent(
+                    userName = userProfile.userName,
+                    active = userProfile.isActive,
+                    Alignment.CenterHorizontally
+                )
+            }
+        }
+    }
+}
+
+/*Composable to implement navigation in jetpack
+* */
+@Composable
+fun UsersApplication() {
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = "users_list") {
+        composable("users_list") {
+            UsersListScreen(userProfileList, navController)
+        }
+        composable("user_detail") {
+            UserProfileScreen()
+        }
+    }
 }
