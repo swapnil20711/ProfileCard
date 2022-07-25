@@ -22,9 +22,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
@@ -53,7 +55,7 @@ fun DefaultPreview() {
 @Preview
 @Composable
 fun UserProfilePreview() {
-    UserProfileScreen()
+    UserProfileScreen(0)
 }
 
 @Composable
@@ -140,7 +142,7 @@ fun UsersListScreen(userProfiles: List<UserProfile>, navController: NavHostContr
             LazyColumn() {
                 items(userProfiles) { userProfile ->
                     ProfileCard(userProfile = userProfile) {
-                        navController.navigate("user_detail")
+                        navController.navigate("user_detail/${userProfile.id}")
                     }
                 }
             }
@@ -162,7 +164,10 @@ fun AppBar() {
 /*
 * User profile code here*/
 @Composable
-fun UserProfileScreen(userProfile: UserProfile = userProfileList[0]) {
+fun UserProfileScreen(userId: Int) {
+    val userProfile = userProfileList.first { userProfile ->
+        userId == userProfile.id
+    }
     Scaffold(topBar = { AppBar() }) {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -190,8 +195,10 @@ fun UsersApplication() {
         composable("users_list") {
             UsersListScreen(userProfileList, navController)
         }
-        composable("user_detail") {
-            UserProfileScreen()
+        composable("user_detail/{userId}", arguments = listOf(navArgument("userId") {
+            type = NavType.IntType
+        })) { navBackStackEntry ->
+            UserProfileScreen(navBackStackEntry.arguments!!.getInt("userId"))
         }
     }
 }
